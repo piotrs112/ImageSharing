@@ -24,7 +24,7 @@ def create_default_plans(apps, schema_editor):
     premium_plan = Plan()
     premium_plan.name = "Premium"
     premium_plan.original_file_link = True
-    basic_plan.expiring_link = False
+    premium_plan.expiring_link = False
     premium_plan.save()
 
     im_h_200_premium = ImageHeight()
