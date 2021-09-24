@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from images.models import ExpiringLink, Image, ImageHeight, Plan, UserPlan
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 
 
 class ImageHeightInlineAdmin(admin.StackedInline):
@@ -13,12 +14,12 @@ class PlanAdmin(admin.ModelAdmin):
 class UserPlanInline(admin.StackedInline):
     model = UserPlan
 
-class UserAdmin(admin.ModelAdmin):
+class CustomUserAdmin(UserAdmin):
     model = User
     inlines = [UserPlanInline]
 
 admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Image)
 admin.site.register(ImageHeight)
 admin.site.register(Plan, PlanAdmin)

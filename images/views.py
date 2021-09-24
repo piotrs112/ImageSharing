@@ -1,10 +1,13 @@
 import os
-from django.http.response import HttpResponse
+from PIL import Image as PIL_Image
+from django.http.response import FileResponse, Http404, HttpResponse
 from images import serializers
 from images.serializers import ImageSerializer
 from rest_framework import viewsets
 from rest_framework import permissions
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
 
 from images.models import Image, ImageHeight, UserPlan
 
@@ -16,21 +19,27 @@ class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-def get_image(request, pk, height=None) -> HttpResponse:
-    image = Image.objects.get(pk=pk)
+
+def get_image(request, pk, height=None):
+    """
+    Serve image if user is owner and has access to requested size
+    """
+    image = get_object_or_404(Image, pk=pk)
     if image.owner == request.user:
         plan = UserPlan.objects.get(user=request.user).plan
-        serializer = ImageSerializer(image)
+
+        folder, filename = os.path.split(image.image.file.name)
+        extension = filename.split('.')[-1]
+
         if height is None and plan.original_file_link:
-            return HttpResponse(serializer.data)
+            return FileResponse(image.image, as_attachment=True)
 
         elif height in [ih.height for ih in ImageHeight.objects.filter(plan=plan)]:
-           folder, filename = os.path.split(serializer.data['image'])
-           _data = serializer.data
-           _data['image'] = os.path.join(folder, str(height), filename)
-           return HttpResponse(_data)
-        
+            path = os.path.join(folder, str(height), filename)
+            path= os.path.relpath(path)
+            return FileResponse(open(path, 'rb'), as_attachment=True)
+
         else:
-            return HttpResponse({'error': 'You dont have permissions to do this'})
+            raise Http404
     else:
-        return HttpResponse(f"errror")
+        raise PermissionDenied

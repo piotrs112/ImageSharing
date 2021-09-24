@@ -10,6 +10,8 @@ from django.db.models.deletion import CASCADE
 
 USER_MODEL = get_user_model()
 
+def get_basic_plan():
+    return Plan.objects.get_or_create(name="Basic")[0]
 
 class UserPlan(models.Model):
     """
@@ -19,7 +21,7 @@ class UserPlan(models.Model):
     plan = models.ForeignKey(
         "Plan",
         on_delete=models.PROTECT,
-        #default=lambda: Plan.objects.get(name="Basic")
+        default=get_basic_plan
     )
 
 
@@ -36,7 +38,7 @@ class Image(models.Model):
         verbose_name="image_owner",
         on_delete=models.CASCADE
     )
-    timestamp = models.DateTimeField(auto_now_add=True)
+    thumbnail_size = models.PositiveIntegerField(default=0, editable=False)
 
     def __str__(self) -> str:
         """
@@ -77,6 +79,7 @@ class ExpiringLink(models.Model):
     image = models.ForeignKey(Image, on_delete=models.CASCADE)
     time = models.PositiveIntegerField(
         validators=[MinValueValidator(300), MaxValueValidator(30000)])
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def is_expired(self) -> bool:
         if datetime.now() > self.expiration_datetime():
@@ -85,7 +88,7 @@ class ExpiringLink(models.Model):
             return False
 
     def expiration_datetime(self) -> datetime:
-        return self.image.timestamp + timedelta(seconds=self.time)
+        return self.timestamp + timedelta(seconds=self.time)
 
     def __str__(self) -> str:
         return f"Link to {self.image}. Expires at {self.expiration_datetime()}."
