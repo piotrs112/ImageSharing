@@ -200,10 +200,4 @@ class TestImageAPI(APITestCase):
         with open(path, 'rb') as binary:
             response = self.client.post(path=url, data={'image': binary, 'owner_id': 1})
             self.assertEqual(response.status_code, HTTP_201_CREATED)
-            self.uploaded_img_link = response.data['image']
         self.client.logout()
-
-    def test_thumbnail(self):
-        url = self.uploaded_img_link
-        self.client.login(username="enterprise", password="enterprise")
-        
