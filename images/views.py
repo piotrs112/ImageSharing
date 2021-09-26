@@ -1,7 +1,10 @@
 import os
+from django.contrib.auth.models import User
+from django.http import response
 from django.http.response import FileResponse, Http404
-from images.serializers import ImageSerializer
-from rest_framework import viewsets
+from rest_framework.status import HTTP_201_CREATED
+from images.serializers import ImageSerializer, UserSerializer
+from rest_framework import serializers, viewsets
 from rest_framework import permissions
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -13,8 +16,25 @@ from images.models import Image, ImageHeight, UserPlan
 class ImageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Image.objects.filter(owner=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        new_image = Image.objects.create(
+            owner=request.user,
+            image=data["image"]
+        )
+        new_image.save()
+        serializer = self.serializer_class(new_image)
+        return Response(serializer.data, status=HTTP_201_CREATED)
 
     serializer_class = ImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    def get_queryset(self):
+        return User.objects.filter(username=self.request.user)
+    
+    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
