@@ -24,7 +24,7 @@ def create_thumbnails(sender, instance, **kwargs):
         _image.save(f"uploads/{height}/{instance}")
 
 
-@receiver(pre_save, sender=ImageHeight)
+@receiver(post_save, sender=ImageHeight)
 def create_image_size_folder(sender, instance, **kwargs):
     path = f"uploads/{instance.height}"
     if not os.path.isdir(path):
