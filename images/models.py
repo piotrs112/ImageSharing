@@ -10,8 +10,10 @@ from django.db.models.deletion import CASCADE
 
 USER_MODEL = get_user_model()
 
+
 def get_basic_plan():
     return Plan.objects.get_or_create(name="Basic")[0]
+
 
 class UserPlan(models.Model):
     """
@@ -30,7 +32,7 @@ class Image(models.Model):
     Model implementing image storage and manipulation
     """
     image = models.ImageField(
-       upload_to="uploads/",
+        upload_to="uploads/",
         validators=[FileExtensionValidator(["jpg", "png"])]
     )
     owner = models.ForeignKey(
@@ -38,7 +40,6 @@ class Image(models.Model):
         verbose_name="image_owner",
         on_delete=models.CASCADE
     )
-    thumbnail_size = models.PositiveIntegerField(default=0, editable=False)
 
     def __str__(self) -> str:
         """
