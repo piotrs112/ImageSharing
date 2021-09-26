@@ -1,14 +1,21 @@
+from django.http import response
+import rest_framework
+from images import serializers, views
 import os
+from rest_framework.test import APIClient, APITestCase, force_authenticate
 from PIL import Image as PIL_Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import TestCase
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.test import APIRequestFactory
 
 from images.models import ExpiringLink, Image, Plan, UserPlan
 
 
 class TestImageModel(TestCase):
     def setUp(self) -> None:
+        super().setUp()
         basic = User()
         basic.username = "basic"
         basic.set_password("basic")
@@ -34,13 +41,14 @@ class TestImageModel(TestCase):
         """
         Create image, add to database and check generated thumbnail sizes
         """
-        blank_image = PIL_Image.new(mode="RGB", size=(2000, 1000), color=(255,255,255))
+        blank_image = PIL_Image.new(mode="RGB", size=(
+            2000, 1000), color=(255, 255, 255))
         blank_image.save('test_image.jpg')
-
 
         img = Image()
         img.owner = User.objects.get(username="premium")
-        img.image = SimpleUploadedFile(name='test_image.jpg', content=open('test_image.jpg', 'rb').read(), content_type='image/jpeg')
+        img.image = SimpleUploadedFile(name='test_image.jpg', content=open(
+            'test_image.jpg', 'rb').read(), content_type='image/jpeg')
         img.save()
 
         thumbnail_200 = PIL_Image.open('uploads/200/test_image.jpg')
@@ -108,9 +116,94 @@ class TestPlanModel(TestCase):
         self.assertEqual(str(plan), plan.name)
 
 
-class TestExpiringLinkModel(TestCase):
-    def setUp(self) -> None:
-        return
+def create_enterprise_user() -> User:
+    """
+    Create enterprise user
+    """
+    enterprise = User()
+    enterprise.username = "enterprise"
+    enterprise.set_password("enterprise")
+    enterprise.save()
+    UserPlan.objects.create(
+        user=enterprise, plan=Plan.objects.get(name="Enterprise"))
+    return enterprise
 
-    def test_init(self):
-        link = ExpiringLink()
+
+def create_blank_picture_file(path='test_image.jpg') -> str:
+    _size = (1234, 800)
+    blank_image = PIL_Image.new(mode="RGB", size=_size, color=(255, 255, 255))
+    blank_image.save(path)
+    return path
+
+
+def create_sample_picture(owner: User) -> Image:
+    path = create_blank_picture_file()
+
+    img = Image()
+    img.owner = owner
+    img.image = SimpleUploadedFile(name=path, content=open(
+        path, 'rb').read(), content_type='image/jpeg')
+    return img
+
+
+class TestImageSerializer(TestCase):
+    """
+    ImageSerializer test
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        user = create_enterprise_user()
+        self.img = create_sample_picture(user)
+
+    def test_serializer(self):
+        """
+        Test sample image serialization
+        """
+
+        _data = serializers.ImageSerializer(self.img).data
+        self.assertEqual(_data, {
+            'id': self.img.pk,
+            'image': f'/{self.img.image.name}'
+        })
+
+
+class TestImageAPI(APITestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.user = create_enterprise_user()
+        self.img = create_sample_picture(self.user)
+        self.img.save()
+
+    def test_permissions(self):
+        response = self.client.get('/images/')
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_image_list(self):
+        url = '/images/'
+
+        self.client.login(username="enterprise", password="enterprise")
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['image'],
+                         'http://testserver/uploads/test_image.jpg')
+        self.assertEqual(response.data[0]['id'], 1)
+        self.client.logout()
+
+    def test_image_upload(self):
+        url = '/images/'
+        path = create_blank_picture_file("sample_upload.jpg")
+
+        self.client.login(username="enterprise", password="enterprise")
+        with open(path, 'rb') as binary:
+            response = self.client.post(path=url, data={'image': binary, 'owner_id': 1})
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
+            self.uploaded_img_link = response.data['image']
+        self.client.logout()
+
+    def test_thumbnail(self):
+        url = self.uploaded_img_link
+        self.client.login(username="enterprise", password="enterprise")
+        
