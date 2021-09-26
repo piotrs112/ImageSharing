@@ -1,8 +1,10 @@
-# Picture sharing 
+# Picture sharing
 
 The project took about 20 hours to make.
 
 ## Set up the project
+
+You can use the handy _setup\_and\_start.sh_ script.
 
 ### Create virtual environment
 
@@ -24,11 +26,16 @@ The project took about 20 hours to make.
 
     mkdir uploads
 
+### Create superuser
+
+    echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('test_user', '', 'test_password')" |   python3 manage.py shell_plus
+
+The superuser login and password are _test\_user_ and _test\_password_.
+
 ### Run the project
 
     python3 manage.py runserver
 
-You can use the handy _setup\_and\_start.sh_ script.
 
 ## API
 
