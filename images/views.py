@@ -16,13 +16,10 @@ from images.models import Image, ImageHeight, UserPlan
 class ImageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Image.objects.filter(owner=self.request.user)
-    
+
     def create(self, request, *args, **kwargs):
         data = request.data
-        new_image = Image.objects.create(
-            owner=request.user,
-            image=data["image"]
-        )
+        new_image = Image.objects.create(owner=request.user, image=data["image"])
         new_image.save()
         serializer = self.serializer_class(new_image)
         return Response(serializer.data, status=HTTP_201_CREATED)
@@ -30,10 +27,11 @@ class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return User.objects.filter(username=self.request.user)
-    
+
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -53,17 +51,18 @@ def get_image(request, pk, height=None):
 
         elif height in [ih.height for ih in ImageHeight.objects.filter(plan=plan)]:
             path = os.path.join(folder, str(height), filename)
-            path= os.path.relpath(path)
-            return FileResponse(open(path, 'rb'), as_attachment=True)
+            path = os.path.relpath(path)
+            return FileResponse(open(path, "rb"), as_attachment=True)
 
         else:
             raise Http404
     else:
         raise PermissionDenied
 
+
 def get_image_from_filename(request, filename, _height=None):
     """
     Serve image based on filename
     """
-    _pk = Image.objects.get(image=f'uploads/{filename}').pk
+    _pk = Image.objects.get(image=f"uploads/{filename}").pk
     return get_image(request, _pk, _height)

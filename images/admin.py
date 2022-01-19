@@ -7,16 +7,20 @@ from django.contrib.auth.admin import UserAdmin
 class ImageHeightInlineAdmin(admin.StackedInline):
     model = ImageHeight
 
+
 class PlanAdmin(admin.ModelAdmin):
     model = Plan
     inlines = [ImageHeightInlineAdmin]
 
+
 class UserPlanInline(admin.StackedInline):
     model = UserPlan
+
 
 class CustomUserAdmin(UserAdmin):
     model = User
     inlines = [UserPlanInline]
+
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)

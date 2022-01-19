@@ -20,41 +20,44 @@ class TestImageModel(TestCase):
         basic.username = "basic"
         basic.set_password("basic")
         basic.save()
-        UserPlan.objects.create(
-            user=basic, plan=Plan.objects.get(name="Basic"))
+        UserPlan.objects.create(user=basic, plan=Plan.objects.get(name="Basic"))
 
         premium = User()
         premium.username = "premium"
         premium.set_password("premium")
         premium.save()
-        UserPlan.objects.create(
-            user=premium, plan=Plan.objects.get(name="Premium"))
+        UserPlan.objects.create(user=premium, plan=Plan.objects.get(name="Premium"))
 
         enterprise = User()
         enterprise.username = "enterprise"
         enterprise.set_password("enterprise")
         enterprise.save()
         UserPlan.objects.create(
-            user=enterprise, plan=Plan.objects.get(name="Enterprise"))
+            user=enterprise, plan=Plan.objects.get(name="Enterprise")
+        )
 
     def test_thumbnail_generation(self):
         """
         Create image, add to database and check generated thumbnail sizes
         """
-        blank_image = PIL_Image.new(mode="RGB", size=(
-            2000, 1000), color=(255, 255, 255))
-        blank_image.save('test_image.jpg')
+        blank_image = PIL_Image.new(
+            mode="RGB", size=(2000, 1000), color=(255, 255, 255)
+        )
+        blank_image.save("test_image.jpg")
 
         img = Image()
         img.owner = User.objects.get(username="premium")
-        img.image = SimpleUploadedFile(name='test_image.jpg', content=open(
-            'test_image.jpg', 'rb').read(), content_type='image/jpeg')
+        img.image = SimpleUploadedFile(
+            name="test_image.jpg",
+            content=open("test_image.jpg", "rb").read(),
+            content_type="image/jpeg",
+        )
         img.save()
 
-        thumbnail_200 = PIL_Image.open('uploads/200/test_image.jpg')
+        thumbnail_200 = PIL_Image.open("uploads/200/test_image.jpg")
         self.assertEqual(thumbnail_200.height, 200)
 
-        thumbnail_400 = PIL_Image.open('uploads/400/test_image.jpg')
+        thumbnail_400 = PIL_Image.open("uploads/400/test_image.jpg")
         self.assertEqual(thumbnail_400.height, 400)
 
     def tearDown(self):
@@ -112,7 +115,8 @@ class TestPlanModel(TestCase):
         Test if str() returns plan name
         """
         plan = Plan.objects.create(
-            name="test", expiring_link=True, original_file_link=False)
+            name="test", expiring_link=True, original_file_link=False
+        )
         self.assertEqual(str(plan), plan.name)
 
 
@@ -124,12 +128,11 @@ def create_enterprise_user() -> User:
     enterprise.username = "enterprise"
     enterprise.set_password("enterprise")
     enterprise.save()
-    UserPlan.objects.create(
-        user=enterprise, plan=Plan.objects.get(name="Enterprise"))
+    UserPlan.objects.create(user=enterprise, plan=Plan.objects.get(name="Enterprise"))
     return enterprise
 
 
-def create_blank_picture_file(path='test_image.jpg') -> str:
+def create_blank_picture_file(path="test_image.jpg") -> str:
     _size = (1234, 800)
     blank_image = PIL_Image.new(mode="RGB", size=_size, color=(255, 255, 255))
     blank_image.save(path)
@@ -141,8 +144,9 @@ def create_sample_picture(owner: User) -> Image:
 
     img = Image()
     img.owner = owner
-    img.image = SimpleUploadedFile(name=path, content=open(
-        path, 'rb').read(), content_type='image/jpeg')
+    img.image = SimpleUploadedFile(
+        name=path, content=open(path, "rb").read(), content_type="image/jpeg"
+    )
     return img
 
 
@@ -162,10 +166,7 @@ class TestImageSerializer(TestCase):
         """
 
         _data = serializers.ImageSerializer(self.img).data
-        self.assertEqual(_data, {
-            'id': self.img.pk,
-            'image': f'/{self.img.image.name}'
-        })
+        self.assertEqual(_data, {"id": self.img.pk, "image": f"/{self.img.image.name}"})
 
 
 class TestImageAPI(APITestCase):
@@ -177,27 +178,28 @@ class TestImageAPI(APITestCase):
         self.img.save()
 
     def test_permissions(self):
-        response = self.client.get('/images/')
+        response = self.client.get("/images/")
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_image_list(self):
-        url = '/images/'
+        url = "/images/"
 
         self.client.login(username="enterprise", password="enterprise")
-        response = self.client.get(url, format='json')
+        response = self.client.get(url, format="json")
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['image'],
-                         'http://testserver/uploads/test_image.jpg')
-        self.assertEqual(response.data[0]['id'], 1)
+        self.assertEqual(
+            response.data[0]["image"], "http://testserver/uploads/test_image.jpg"
+        )
+        self.assertEqual(response.data[0]["id"], 1)
         self.client.logout()
 
     def test_image_upload(self):
-        url = '/images/'
+        url = "/images/"
         path = create_blank_picture_file("sample_upload.jpg")
 
         self.client.login(username="enterprise", password="enterprise")
-        with open(path, 'rb') as binary:
-            response = self.client.post(path=url, data={'image': binary, 'owner_id': 1})
+        with open(path, "rb") as binary:
+            response = self.client.post(path=url, data={"image": binary, "owner_id": 1})
             self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.client.logout()

@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'plan_name']
+        fields = ["username", "plan_name"]
         read_only = True
         many = False
 
@@ -19,4 +19,4 @@ class UserSerializer(serializers.ModelSerializer):
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
-        exclude = ['owner']
+        exclude = ["owner"]

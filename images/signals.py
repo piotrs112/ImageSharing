@@ -20,7 +20,7 @@ def create_thumbnails(sender, instance, **kwargs):
 
     for image_height in image_heights:
         height = image_height.height
-        _image = image.resize((int(image.width*height/image.height), height))
+        _image = image.resize((int(image.width * height / image.height), height))
         _image.save(f"uploads/{height}/{instance}")
 
 
@@ -29,6 +29,7 @@ def create_image_size_folder(sender, instance, **kwargs):
     path = f"uploads/{instance.height}"
     if not os.path.isdir(path):
         os.mkdir(path)
+
 
 @receiver(post_save, sender=User)
 def create_superuserplan_if_not_exists(sender, instance, **kwargs):
