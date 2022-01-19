@@ -1,16 +1,17 @@
 import os
-from django.contrib.auth.models import User
-from django.http import response
-from django.http.response import FileResponse, Http404
-from rest_framework.status import HTTP_201_CREATED
-from images.serializers import ImageSerializer, UserSerializer
-from rest_framework import serializers, viewsets
-from rest_framework import permissions
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import PermissionDenied
+from http.client import HTTPResponse
 
-from images.models import Image, ImageHeight, UserPlan
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
+from django.http import response
+from django.http.response import FileResponse, Http404, JsonResponse
+from django.shortcuts import get_object_or_404
+from rest_framework import permissions, serializers, viewsets
+from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
+
+from images.models import ExpiringLink, Image, ImageHeight, UserPlan
+from images.serializers import ExpiringLinkSerializer, ImageSerializer, UserSerializer
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -34,6 +35,14 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class ExpiringLinkViewSet(viewsets.ModelViewSet):
+    serializer_class = ExpiringLinkSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ExpiringLink.objects.filter(image__owner=self.request.user)
 
 
 def get_image(request, pk, height=None):
@@ -66,3 +75,13 @@ def get_image_from_filename(request, filename, _height=None):
     """
     _pk = Image.objects.get(image=f"uploads/{filename}").pk
     return get_image(request, _pk, _height)
+
+
+def get_image_from_exlink(request, hashid):
+    exlink = ExpiringLink.objects.get(hashid=hashid)
+    if not exlink.is_expired():
+        return get_image(
+            request, exlink.image.id, exlink.height.height
+        )  # FIXME: should be available for all
+    else:
+        return JsonResponse({"error": "link expired"})

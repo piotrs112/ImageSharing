@@ -130,3 +130,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # MEDIA_URL = '/uploads/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
+
+# Hashids settings
+DJANGO_HASHIDS_SALT = (
+    "hoL6nM42qvb8camfjQ04DNAiTUjzRkyV+OKZCz/wempWJIal9ZhsMzLMIEyXzh3HS"
+)
+
+DJANGO_HASHIDS_MIN_LENGTH = 16

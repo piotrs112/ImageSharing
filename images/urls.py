@@ -5,6 +5,7 @@ from images import views
 router = routers.DefaultRouter()
 router.register(r"images", views.ImageViewSet, basename="Images")
 router.register(r"user", views.UserViewSet, basename="User")
+router.register(r"exlink", views.ExpiringLinkViewSet, basename="ExpiringLink")
 
 urlpatterns = [
     path("", include(router.urls)),
@@ -20,4 +21,5 @@ urlpatterns = [
         views.get_image_from_filename,
         name="get-thumbnail",
     ),
+    path("link/<str:hashid>", views.get_image_from_exlink, name="exlink-image"),
 ]

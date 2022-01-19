@@ -13,6 +13,7 @@ def create_thumbnails(sender, instance, **kwargs):
     """
     Create appropriate thumbnails when image is saved
     """
+    print(os.getcwd())
     image = PIL_Image.open(instance.image.name)
 
     user_plan = UserPlan.objects.get(user=instance.owner)

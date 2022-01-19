@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -10,6 +10,8 @@ from django.core.validators import (
 )
 from django.db import models
 from django.db.models.deletion import CASCADE
+
+from django_hashids import HashidsField
 
 USER_MODEL = get_user_model()
 
@@ -76,14 +78,16 @@ class ExpiringLink(models.Model):
     Model implementing expiring links
     """
 
+    hashid = HashidsField(real_field_name="id")
     image = models.ForeignKey(Image, on_delete=models.CASCADE)
     time = models.PositiveIntegerField(
         validators=[MinValueValidator(300), MaxValueValidator(30000)]
     )
     timestamp = models.DateTimeField(auto_now_add=True)
+    height = models.ForeignKey(ImageHeight, on_delete=models.CASCADE, null=True)
 
     def is_expired(self) -> bool:
-        if datetime.now() > self.expiration_datetime():
+        if datetime.now(timezone.utc) > self.expiration_datetime():
             return True
         else:
             return False
